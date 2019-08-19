@@ -4,6 +4,8 @@ import gym
 import argparse
 import os
 
+import wandb
+
 import utils
 import TD3
 import OurDDPG
@@ -74,6 +76,10 @@ if __name__ == "__main__":
 	elif args.policy_name == "OurDDPG": policy = OurDDPG.DDPG(state_dim, action_dim, max_action)
 	elif args.policy_name == "DDPG": policy = DDPG.DDPG(state_dim, action_dim, max_action)
 
+	# Setup wandb
+	wandb.init(project="TD3", config=args)
+	wandb.watch((policy.actor, policy.critic))
+
 	replay_buffer = utils.ReplayBuffer()
 	
 	# Evaluate untrained policy
@@ -90,6 +96,11 @@ if __name__ == "__main__":
 
 			if total_timesteps != 0: 
 				print(f"Total T: {total_timesteps} Episode Num: {episode_num} Episode T: {episode_timesteps} Reward: {episode_reward}")
+				wandb.log({
+					"Episode Timesteps": episode_timesteps,
+					"Episode Reward": episode_reward,
+					"Total Timesteps": total_timesteps,
+				}, step=episode_num)
 				if args.policy_name == "TD3":
 					policy.train(replay_buffer, episode_timesteps, args.batch_size, args.discount, args.tau, args.policy_noise, args.noise_clip, args.policy_freq)
 				else: 
